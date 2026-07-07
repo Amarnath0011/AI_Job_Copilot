@@ -1,7 +1,8 @@
-from langchain_huggingface import LangchainEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
-embedding_model = LangchainEmbeddings(
-    model_name = "Qwen/Qwen3-Embedding-0.6B"
+from app.config import EMBEDDING_MODEL
+
+
+embedding_model = HuggingFaceEmbeddings(
+    model_name=EMBEDDING_MODEL
 )
-
-
