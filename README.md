@@ -243,15 +243,19 @@ Keyword Match                  Prompt
 
 ```text
 backend/
-
 └── app/
-
     ├── ai/
-    │   └── llm.py
+    │   ├── llm.py
+    │   ├── embeddings.py
+    │   └── prompts/
+    │       ├── ats_prompt.py
+    │       ├── interview.py
+    │       └── company.py
     │
     ├── api/
     │   ├── resume.py
     │   ├── ats.py
+    │   ├── interview.py
     │   └── test.py
     │
     ├── ats/
@@ -263,24 +267,26 @@ backend/
     │
     ├── models/
     │   ├── ats_models.py
+    │   ├── interview_models.py
     │   └── llm_models.py
     │
-    ├── prompts/
-    │   └── ats.py
-    │
     ├── rag/
-    │   ├── embeddings.py
     │   ├── splitter.py
     │   ├── vector_store.py
     │   ├── retriever.py
     │   └── document_store.py
     │
     ├── services/
+    │   ├── resume_service.py
     │   ├── ats_service.py
+    │   ├── interview_service.py
+    │   ├── llm_service.py
     │   ├── keyword_service.py
     │   ├── similarity_service.py
-    │   ├── parser.py
-    │   └── resume_service.py
+    │   └── parser.py
+    │
+    ├── utils/
+    │   └── session.py
     │
     ├── uploads/
     │

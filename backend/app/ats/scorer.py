@@ -29,8 +29,9 @@ class ATSScorer:
             keyword_score = 100
 
         # Weighted score
+        semantic_score = similarity * 100
         ats_score = round(
-            (similarity * 70) +
+            (semantic_score * 0.7) +
             (keyword_score * 0.30)
         )
 
