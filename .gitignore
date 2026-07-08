@@ -37,3 +37,12 @@ frontend/node_modules/
 # ==========================
 dist/
 build/
+# Chroma vector database
+backend/app/vectorstore/
+
+# Uploaded resumes
+backend/app/uploads/
+
+# Python cache
+__pycache__/
+*.pyc
