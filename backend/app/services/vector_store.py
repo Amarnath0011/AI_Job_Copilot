@@ -1,6 +1,6 @@
 from langchain_chroma import Chroma
 
-from app.config import VECTOR_DB_DIR
+from app.core.config import VECTOR_DB_DIR
 from app.services.embeddings import embedding_model
 
 
