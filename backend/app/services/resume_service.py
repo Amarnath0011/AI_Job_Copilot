@@ -3,7 +3,7 @@ import shutil
 from fastapi import UploadFile
 
 from app.services.parser import extract_text_from_pdf
-from app.services.document_service import store_document
+from app.rag.document_store import store_document
 
 UPLOAD_DIR = Path("app/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.api.resume import router as resume_router
-from app.services.retriever import get_retriever
+from app.rag.retriever import get_retriever
 from app.api.resume import router
 
 app = FastAPI(
