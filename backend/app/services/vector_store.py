@@ -1,7 +1,7 @@
 from langchain_chroma import Chroma
 
 from app.core.config import VECTOR_DB_DIR
-from app.services.embeddings import embedding_model
+from app.ai.embeddings import embedding_model
 
 
 vector_store = Chroma(
