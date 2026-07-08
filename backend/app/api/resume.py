@@ -24,5 +24,6 @@ async def upload_resume(file: UploadFile = File(...)):
 
     return {
         "success": True,
-        **result
+        "message": "Resume uploaded successfully.",
+        "data": result
     }
