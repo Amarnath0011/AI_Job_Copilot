@@ -32,7 +32,7 @@ Instructions:
 
 Return the response in exactly this format:
 
-{
+{{
   "technical": [
     "...",
     "...",
@@ -50,6 +50,6 @@ Return the response in exactly this format:
     "...",
     "..."
   ]
-}
+}}
 """
 )
