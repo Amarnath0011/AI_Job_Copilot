@@ -1,8 +1,12 @@
 from app.ai.prompts.interview import (
+    INTERVIEW_EVALUATION_PROMPT,
     INTERVIEW_QUESTION_PROMPT,
+    interview_evaluation_parser,
     interview_question_parser,
 )
 from app.models.interview_models import (
+    InterviewEvaluationRequest,
+    InterviewEvaluationResponse,
     InterviewQuestionRequest,
     InterviewQuestionResponse,
 )
@@ -13,7 +17,7 @@ from app.utils.parsers import LLMParser
 
 class InterviewService:
     """
-    Service responsible for generating personalized interview questions.
+    Service responsible for interview related AI features.
     """
 
     def generate_questions(
@@ -52,9 +56,30 @@ class InterviewService:
         llm_response = llm_service.generate(messages)
 
         return LLMParser.parse(
-        llm_response,
-        interview_question_parser,
-    )
+            llm_response,
+            interview_question_parser,
+        )
+
+    def evaluate_answer(
+        self,
+        request: InterviewEvaluationRequest,
+    ) -> InterviewEvaluationResponse:
+        """
+        Evaluate a candidate's interview answer.
+        """
+
+        messages = INTERVIEW_EVALUATION_PROMPT.format_messages(
+            question=request.question,
+            answer=request.answer,
+            format_instructions=interview_evaluation_parser.get_format_instructions(),
+        )
+
+        llm_response = llm_service.generate(messages)
+
+        return LLMParser.parse(
+            llm_response,
+            interview_evaluation_parser,
+        )
 
 
 # Singleton instance

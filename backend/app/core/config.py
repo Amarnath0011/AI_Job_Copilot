@@ -14,3 +14,8 @@ EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+GROQ_MODEL = os.getenv(
+    "GROQ_MODEL",
+    "llama-3.1-8b-instant",
+)
