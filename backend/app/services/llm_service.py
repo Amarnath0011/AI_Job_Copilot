@@ -1,6 +1,6 @@
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_groq import ChatGroq
 
-from app.core.config import HF_TOKEN
+from app.core.config import GROQ_API_KEY
 
 
 class LLMService:
@@ -9,28 +9,28 @@ class LLMService:
     """
 
     def __init__(self):
-        self.llm = HuggingFaceEndpoint(
-            repo_id="Qwen/Qwen2.5-7B-Instruct",
-            huggingfacehub_api_token=HF_TOKEN,
-            task="text-generation",
-            max_new_tokens=512,
+        self.llm = ChatGroq(
+            model="llama-3.1-8b-instant",
+            groq_api_key=GROQ_API_KEY,
             temperature=0.2,
-            do_sample=False,
+            max_tokens=700,
         )
 
-    def generate(
-        self,
-        prompt: str,
-        max_tokens: int = 512,
-        temperature: float = 0.2,
-    ) -> str:
+    def generate(self, prompt: str) -> str:
+        """
+        Generate a response from the LLM.
 
-        self.llm.max_new_tokens = max_tokens
-        self.llm.temperature = temperature
+        Args:
+            prompt: Input prompt.
+
+        Returns:
+            Generated text as a string.
+        """
 
         response = self.llm.invoke(prompt)
 
-        return response
+        # ChatGroq returns an AIMessage object.
+        return response.content.strip()
 
 
 # Singleton instance
