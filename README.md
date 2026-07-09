@@ -10,9 +10,19 @@ AI Job Copilot is a full-stack AI application designed to assist job seekers thr
 
 The application allows users to upload their resumes, compare them against job descriptions, receive ATS scores, identify missing skills, generate AI-powered resume improvements, prepare personalized interview questions, and eventually interact with an AI interviewer.
 
-The project is being built with a production-oriented architecture using FastAPI, LangChain, Hugging Face models, ChromaDB, and a React frontend.
+The project is built using a production-oriented architecture powered by FastAPI, LangChain, ChromaDB, and Large Language Models. The LLM layer is abstracted through a dedicated `LLMService`, allowing seamless switching between providers (Groq, OpenAI, Hugging Face, OpenRouter, etc.) with minimal code changes. A React dashboard and Chrome Extension are planned for the frontend.
 
 ---
+
+# Why AI Job Copilot?
+
+Most AI resume tools focus on a single task such as ATS scoring or resume feedback.
+
+AI Job Copilot provides an end-to-end AI-powered job preparation platform that assists candidates throughout the hiring journey—from resume optimization and ATS analysis to personalized interview preparation, answer evaluation, and eventually mock interviews and browser-based job application assistance.
+
+The project is designed with a modular, production-oriented backend architecture that enables easy integration of new AI features and LLM providers.
+
+
 
 # Features
 
@@ -53,21 +63,23 @@ The project is being built with a production-oriented architecture using FastAPI
 
 ---
 
-## 🚧 AI Resume Improvement
+## ✅ AI Resume Improvement
 
-* Resume feedback
-* Resume summary improvement
-* ATS improvement suggestions
-* Keyword recommendations
+* AI resume feedback
+* Resume enhancement suggestions
+* ATS optimization recommendations
+* Missing keyword suggestions
 
 ---
 
-## 🚧 Interview Preparation
+## ✅ AI Interview Preparation
 
-* Technical Questions
+* Personalized Technical Questions
 * Behavioral Questions
 * HR Questions
 * Project-based Questions
+* Resume-aware Question Generation
+* Job Description-aware Questions
 
 ---
 
@@ -78,6 +90,16 @@ The project is being built with a production-oriented architecture using FastAPI
 * Feedback
 * Follow-up questions
 * Performance scoring
+
+---
+
+## 🚧 AI Answer Evaluation
+
+* Evaluate candidate answers
+* AI-generated feedback
+* Technical scoring
+* Communication scoring
+* Improvement suggestions
 
 ---
 
@@ -121,9 +143,11 @@ Then:
 ## AI
 
 * LangChain
-* Hugging Face Inference API
-* Qwen 2.5 7B Instruct
-* PromptTemplate
+* Groq API
+* Llama 3.1 8B Instant
+* Prompt Engineering
+* LangChain PromptTemplate
+* Retrieval-Augmented Generation (RAG)
 
 ---
 
@@ -150,7 +174,7 @@ Then:
 
 ## Database (Future)
 
-* PostgreSQL
+* PostgreSQL 
 
 ---
 
@@ -164,77 +188,51 @@ Then:
 # System Architecture
 
 ```text
-                  User
-
-                    │
-
-                    ▼
-
-             Upload Resume
-
-                    │
-
-                    ▼
-
-               FastAPI API
-
-                    │
-
-                    ▼
-
-               PDF Parser
-
-                    │
-
-                    ▼
-
-             Text Extraction
-
-                    │
-
-                    ▼
-
-              Text Chunking
-
-                    │
-
-                    ▼
-
-         Hugging Face Embeddings
-
-                    │
-
-                    ▼
-
-                ChromaDB
-
-                    │
-
-                    ▼
-
-               RAG Retriever
-
-                    │
-
-      ┌─────────────┴──────────────┐
-
-      ▼                            ▼
-
- ATS Scorer                 AI Analyzer
-
-      ▼                            ▼
-
-Similarity              Hugging Face LLM
-
-Keyword Match                  Prompt
-
-      ▼                            ▼
-
-      └─────────────┬──────────────┘
-
-                    ▼
-
-              Final ATS Report
+                      User
+                       │
+                       ▼
+                 Upload Resume
+                       │
+                       ▼
+                  FastAPI API
+                       │
+                       ▼
+                  PDF Parser
+                       │
+                       ▼
+                Text Extraction
+                       │
+                       ▼
+                 Text Chunking
+                       │
+                       ▼
+              Embedding Model
+                       │
+                       ▼
+                  ChromaDB
+                       │
+                       ▼
+                 RAG Retriever
+                       │
+        ┌──────────────┼──────────────┐
+        ▼              ▼              ▼
+   ATS Service   Interview Service   Future Company Service
+        │              │
+        ▼              ▼
+   Prompt Builder  Prompt Builder
+        │              │
+        └───────┬──────┘
+                ▼
+           LLM Service
+                │
+                ▼
+         Groq (Llama 3.1)
+                │
+                ▼
+         Structured JSON
+                │
+                ▼
+          API Response
 ```
 
 ---
@@ -310,6 +308,7 @@ backend/
 | Method | Endpoint       | Description                        |
 | ------ | -------------- | ---------------------------------- |
 | POST   | `/ats/analyze` | Resume vs Job Description Analysis |
+| POST   | `/interview/analyze` | Resume vs Job Description Analysis |
 
 ---
 
@@ -326,38 +325,36 @@ backend/
 
 ```text
 Resume Upload
-
-↓
-
-Text Extraction
-
-↓
-
+        │
+        ▼
+PDF Parsing
+        │
+        ▼
 Chunking
-
-↓
-
+        │
+        ▼
 Embeddings
-
-↓
-
+        │
+        ▼
 ChromaDB
-
-↓
-
-Retriever
-
-↓
-
-ATS Score
-
-↓
-
-LLM Feedback
-
-↓
-
-JSON Response
+        │
+        ▼
+Retriever (RAG)
+        │
+        ▼
+Resume Context
+        │
+        ▼
+Prompt Engineering
+        │
+        ▼
+LLM Service
+        │
+        ▼
+Groq (Llama 3.1)
+        │
+        ▼
+Structured JSON Response
 ```
 
 ---
@@ -365,7 +362,6 @@ JSON Response
 # Future Roadmap
 
 ## Phase 1 ✅
-
 * FastAPI Setup
 * Resume Upload
 * PDF Parsing
@@ -375,57 +371,38 @@ JSON Response
 * ChromaDB
 * Semantic Retrieval
 
----
-
 ## Phase 2 ✅
-
 * ATS Scoring
-* Similarity Matching
 * Keyword Matching
+* Semantic Similarity
+* Missing Skills Detection
 
----
+## Phase 3 ✅
+* AI Resume Feedback
+* Resume Improvement Suggestions
 
-## Phase 3 🚧
+## Phase 4 ✅
+* Personalized Interview Question Generator
 
-* Resume Improvement
-* AI Feedback
-
----
-
-## Phase 4
-
-* Interview Question Generator
-
----
-
-## Phase 5
-
-* Mock Interview
-
----
+## Phase 5 🚧
+* AI Answer Evaluation
+* Interactive Mock Interview
+* Follow-up Questions
 
 ## Phase 6
-
-* Voice Interview
-
----
+* Company-specific Interview Coach
 
 ## Phase 7
-
-* Chrome Extension
-
----
+* Voice Interview
 
 ## Phase 8
-
-* React Dashboard
-
----
+* Chrome Extension
 
 ## Phase 9
+* React Dashboard
 
+## Phase 10
 * Deployment
-
 ---
 
 # Setup
@@ -458,20 +435,15 @@ EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
 # Skills Demonstrated
 
-* FastAPI
-* REST APIs
-* Retrieval-Augmented Generation (RAG)
+* Large Language Models (LLMs)
+* Groq API
+* AI Interview Systems
 * Prompt Engineering
-* Semantic Search
-* Vector Databases
-* ChromaDB
-* Hugging Face Inference API
-* Hugging Face Embeddings
-* LangChain
-* AI Application Development
-* Backend Architecture
-* Production-oriented Project Structure
-
+* Retrieval-Augmented Generation (RAG)
+* Service Layer Architecture
+* Dependency Injection (if applicable)
+* Modular Backend Design
+* Production-grade API Development
 ---
 
 # Author
