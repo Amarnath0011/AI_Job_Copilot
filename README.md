@@ -305,10 +305,10 @@ backend/
 
 ## ATS
 
-| Method | Endpoint       | Description                        |
-| ------ | -------------- | ---------------------------------- |
-| POST   | `/ats/analyze` | Resume vs Job Description Analysis |
-| POST   | `/interview/analyze` | Resume vs Job Description Analysis |
+| Method | Endpoint               | Description                        |
+| ------ | ---------------------- | ---------------------------------- |
+| POST   | `/ats/analyze`         | Resume vs Job Description Analysis |
+| POST   | `/interview/questions` | Generate Questions from the resume |
 
 ---
 
