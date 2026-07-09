@@ -1,7 +1,7 @@
 from pathlib import Path
 import shutil
 from fastapi import UploadFile
-from app.utils.session import generate_session_id
+# from app.utils.session import generate_session_id
 
 from app.services.parser import extract_text_from_pdf
 from app.rag.document_store import store_document
@@ -21,13 +21,13 @@ def save_resume(file: UploadFile):
 
     if file.content_type == "application/pdf":
         extracted_text = extract_text_from_pdf(file_path)
-        session_id = generate_session_id()
+        # session_id = generate_session_id()
         # Store in Chroma
         store_document(
            text=extracted_text,
            source=file.filename,
            document_type="resume",
-           session_id=session_id,
+        #    session_id=session_id,
 )
 
     return {
@@ -35,5 +35,5 @@ def save_resume(file: UploadFile):
         "size": file_path.stat().st_size,
         "path": str(file_path),
         "text": extracted_text,
-        "session_id": session_id
+        # "session_id": session_id
     }

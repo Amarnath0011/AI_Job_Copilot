@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -81,5 +81,107 @@ class InterviewEvaluationResponse(BaseModel):
     )
 
     expected_answer: str = Field(
-        description="An ideal answer expected from the candidate."
+        description="Ideal answer expected from the candidate."
     )
+
+
+# ==========================================================
+# Interview Session Engine
+# ==========================================================
+
+class InterviewStartRequest(BaseModel):
+    """
+    Starts a new interview session.
+    """
+
+    job_description: str = Field(
+        ...,
+        min_length=50,
+        description="Job description for interview preparation."
+    )
+
+
+class InterviewStartResponse(BaseModel):
+    """
+    Returned after successfully starting an interview.
+    """
+
+    session_id: str
+
+    question_number: int
+
+    total_questions: int
+
+    question: str
+
+
+class InterviewAnswerRequest(BaseModel):
+    """
+    Candidate submits an answer.
+    """
+
+    session_id: str
+
+    answer: str = Field(
+        ...,
+        min_length=2,
+        description="Candidate's answer."
+    )
+
+
+class InterviewHistoryItem(BaseModel):
+    """
+    One completed interview interaction.
+    """
+
+    question: str
+
+    answer: str
+
+    evaluation: InterviewEvaluationResponse
+
+
+class InterviewAnswerResponse(BaseModel):
+    """
+    Returned after evaluating an answer.
+    """
+
+    evaluation: InterviewEvaluationResponse
+
+    question_number: int
+
+    total_questions: int
+
+    interview_completed: bool
+
+    next_question: Optional[str] = None
+
+
+class InterviewEndRequest(BaseModel):
+    """
+    Ends an interview session.
+    """
+
+    session_id: str
+
+
+class InterviewReportResponse(BaseModel):
+    """
+    Final interview report.
+    """
+
+    overall_score: int
+
+    technical_average: int
+
+    communication_average: int
+
+    strengths: List[str]
+
+    weaknesses: List[str]
+
+    recommendations: List[str]
+
+    hiring_recommendation: str
+
+    interview_summary: str
