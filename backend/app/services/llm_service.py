@@ -13,7 +13,7 @@ class LLMService:
             model="llama-3.1-8b-instant",
             groq_api_key=GROQ_API_KEY,
             temperature=0.2,
-            max_tokens=700,
+            max_tokens=1200,
         )
 
     def generate(self, prompt: str) -> str:

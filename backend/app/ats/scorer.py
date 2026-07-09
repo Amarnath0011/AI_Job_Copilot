@@ -34,7 +34,12 @@ class ATSScorer:
             (semantic_score * 0.7) +
             (keyword_score * 0.30)
         )
-
+        print("=" * 50)
+        print("Resume Skills:", resume_skills)
+        print("JD Skills:", jd_skills)
+        print("Matching Skills:", matching)
+        print("Missing Skills:", missing)
+        print("=" * 50)
         return {
             "ats_score": ats_score,
             "semantic_similarity": similarity,
