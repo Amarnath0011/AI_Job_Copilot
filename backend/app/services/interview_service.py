@@ -62,11 +62,7 @@ class InterviewService:
             job_description=request.job_description,
         )
 
-        llm_response = llm_service.generate(
-            prompt=prompt,
-            max_tokens=700,
-            temperature=0.3,
-        )
+        llm_response = llm_service.generate(prompt)
 
         data = self.__extract_json(llm_response)
 
