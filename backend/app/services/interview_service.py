@@ -1,13 +1,14 @@
-import json
-import re
-
-from app.ai.prompts.interview import INTERVIEW_QUESTION_PROMPT
+from app.ai.prompts.interview import (
+    INTERVIEW_QUESTION_PROMPT,
+    interview_question_parser,
+)
 from app.models.interview_models import (
     InterviewQuestionRequest,
     InterviewQuestionResponse,
 )
 from app.rag.retriever import get_retriever
 from app.services.llm_service import llm_service
+from app.utils.parsers import LLMParser
 
 
 class InterviewService:
@@ -15,30 +16,15 @@ class InterviewService:
     Service responsible for generating personalized interview questions.
     """
 
-    def __extract_json(self, text: str) -> dict:
-        """
-        Extracts JSON from LLM output.
-        """
-
-        text = text.strip()
-
-        # Remove markdown fences
-        text = re.sub(r"^```json", "", text)
-        text = re.sub(r"^```", "", text)
-        text = re.sub(r"```$", "", text)
-
-        # Find JSON object
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-
-        if not match:
-            raise ValueError("No valid JSON found in LLM response.")
-
-        return json.loads(match.group())
-
     def generate_questions(
         self,
         request: InterviewQuestionRequest,
     ) -> InterviewQuestionResponse:
+        """
+        Generate personalized interview questions using:
+        - Resume Context (RAG)
+        - Job Description
+        """
 
         retriever = get_retriever(
             document_type="resume",
@@ -57,20 +43,19 @@ class InterviewService:
             for doc in documents
         )
 
-        prompt = INTERVIEW_QUESTION_PROMPT.format(
+        messages = INTERVIEW_QUESTION_PROMPT.format_messages(
             resume_context=resume_context,
             job_description=request.job_description,
+            format_instructions=interview_question_parser.get_format_instructions(),
         )
 
-        llm_response = llm_service.generate(prompt)
+        llm_response = llm_service.generate(messages)
 
-        data = self.__extract_json(llm_response)
-
-        return InterviewQuestionResponse(
-            technical=data.get("technical", []),
-            behavioral=data.get("behavioral", []),
-            hr=data.get("hr", []),
-        )
+        return LLMParser.parse(
+        llm_response,
+        interview_question_parser,
+    )
 
 
+# Singleton instance
 interview_service = InterviewService()
