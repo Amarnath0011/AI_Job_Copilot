@@ -164,24 +164,47 @@ class InterviewEndRequest(BaseModel):
 
     session_id: str
 
+class QuestionFeedback(BaseModel):
+    """
+    Feedback for an individual interview question.
+    """
+
+    question: str
+
+    score: int = Field(..., ge=0, le=100)
+
+    feedback: str
+
+    ideal_answer_summary: str
+
 
 class InterviewReportResponse(BaseModel):
     """
-    Final interview report.
+    Final interview report generated after the interview session.
     """
 
-    overall_score: int
+    overall_score: int = Field(..., ge=0, le=100)
 
-    technical_average: int
+    technical_score: int = Field(..., ge=0, le=100)
 
-    communication_average: int
+    communication_score: int = Field(..., ge=0, le=100)
+
+    problem_solving_score: int = Field(..., ge=0, le=100)
+
+    confidence_score: int = Field(..., ge=0, le=100)
 
     strengths: List[str]
 
     weaknesses: List[str]
 
-    recommendations: List[str]
+    knowledge_gaps: List[str]
+
+    question_feedback: List[QuestionFeedback]
+
+    learning_roadmap: List[str]
+
+    difficulty_level: str
 
     hiring_recommendation: str
 
-    interview_summary: str
+    summary: str

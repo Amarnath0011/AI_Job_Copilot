@@ -5,6 +5,13 @@ from app.models.interview_models import (
     InterviewHistoryItem,
 )
 
+def generate_session_id() -> str:
+    """
+    Generate a unique session ID for document uploads.
+    """
+
+    return str(uuid4())
+
 
 class SessionManager:
     """
@@ -15,7 +22,6 @@ class SessionManager:
 
     Future:
         - MongoDB
-        - Redis
     """
 
     def __init__(self):

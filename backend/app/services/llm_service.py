@@ -21,7 +21,7 @@ class LLMService:
             model=GROQ_MODEL,
             api_key=GROQ_API_KEY,
             temperature=0.2,
-            max_tokens=700,
+            max_tokens=1200,
         )
 
     def generate(

@@ -3,7 +3,7 @@ from app.rag.vector_store import vector_store
 
 def get_retriever(
     document_type: str = "resume",
-    k: int = 4,
+    k: int = 2,
 ):
     return vector_store.as_retriever(
         search_kwargs={
