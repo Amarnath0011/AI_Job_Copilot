@@ -15,7 +15,6 @@ class SessionManager:
 
     Future:
         - MongoDB
-        - Redis
     """
 
     def __init__(self):

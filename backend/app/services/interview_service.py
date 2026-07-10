@@ -8,6 +8,7 @@ from app.ai.prompts.interview import (
     interview_report_parser,
     next_question_parser,
 )
+from app.ai.prompts.interview_report import INTERVIEW_REPORT_PROMPT , interview_report_parser
 from app.models.interview_models import (
     InterviewAnswerRequest,
     InterviewAnswerResponse,
@@ -60,6 +61,73 @@ class InterviewService:
             doc.page_content
             for doc in documents
         )
+        
+        
+    # ==========================================================
+# Private Helpers
+# ==========================================================
+
+    def _build_interview_history(
+        self,
+        history: list[InterviewHistoryItem],
+    ) -> str:
+        """
+        Build a compact interview summary for report generation.
+
+        Instead of sending complete candidate answers,
+        send only the evaluation summary for each question.
+        """
+
+        if not history:
+            return "No interview history available."
+
+        interview_summary = []
+
+        for index, item in enumerate(history, start=1):
+
+            evaluation = item.evaluation
+
+            strengths = (
+                ", ".join(evaluation.strengths)
+                if evaluation.strengths
+                else "None"
+            )
+
+            improvements = (
+                ", ".join(evaluation.improvements)
+                if evaluation.improvements
+                else "None"
+            )
+
+            interview_summary.append(
+                f"""
+    Question {index}
+
+    Question:
+    {item.question}
+
+    Overall Score:
+    {evaluation.overall_score}/100
+
+    Technical Score:
+    {evaluation.technical_score}/100
+
+    Communication Score:
+    {evaluation.communication_score}/100
+
+    Strengths:
+    {strengths}
+
+    Areas for Improvement:
+    {improvements}
+
+    Feedback:
+    {evaluation.feedback}
+    """.strip()
+            )
+
+        return "\n\n".join(interview_summary)
+
 
     # ==========================================================
     # Feature 5.1
@@ -271,49 +339,39 @@ Feedback:
         request: InterviewEndRequest,
     ) -> InterviewReportResponse:
         """
-        Generate final interview report.
+        Generate the final interview report for a completed interview session.
         """
 
         session = session_manager.get_session(
-            request.session_id
+        request.session_id
         )
 
         if not session:
             raise ValueError(
-                "Interview session not found."
+            "Interview session not found."
             )
 
-        history_text = "\n\n".join(
-            [
-                f"""
-Question:
-{item.question}
-
-Answer:
-{item.answer}
-
-Evaluation:
-{item.evaluation.model_dump_json(indent=2)}
-"""
-                for item in session["history"]
-            ]
-        )
+        interview_history = self._build_interview_history(
+            session["history"]
+                   )
 
         messages = INTERVIEW_REPORT_PROMPT.format_messages(
-            history=history_text,
+            resume_context=session["resume_context"],
+            job_description=session["job_description"],
+            interview_history=interview_history,
             format_instructions=interview_report_parser.get_format_instructions(),
         )
 
-        response = llm_service.generate(messages)
+        llm_response = llm_service.generate(messages)
 
         report = LLMParser.parse(
-            response,
+            llm_response,
             interview_report_parser,
         )
 
-        session_manager.delete_session(
-            request.session_id
-        )
+        # session_manager.delete_session(
+        #     request.session_id
+        # )
 
         return report
 
