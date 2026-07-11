@@ -291,3 +291,83 @@ required no changes to the existing service architecture.
 
 This experience taught me that in GenAI systems, prompt engineering and
 context optimization are as important as the application code itself.
+
+
+//Some more problems i solved during the interview_report_generation 
+
+1. Token Limit Exceeded (413)
+
+Problem:
+While generating the final interview report, the LLM returned a 413 Request Too Large error because the prompt exceeded the model's token limit.
+
+Root Cause:
+I was sending the resume, job description, complete interview history, raw answers, and detailed evaluations together, creating a very large prompt.
+
+Solution:
+I compressed the interview history by removing raw answers and keeping only evaluation summaries, which significantly reduced token usage without changing the architecture.
+
+2. Duplicate Context
+
+Problem:
+The same information was being sent to the LLM multiple times, increasing token usage unnecessarily.
+
+Root Cause:
+Both the candidate's raw answers and their AI-generated evaluations were included, even though the evaluations already summarized the answers.
+
+Solution:
+I redesigned the prompt to use only the compressed evaluation summaries, eliminating redundant context and improving efficiency.
+
+3. Parser Returning JSON Schema ($defs)
+
+Problem:
+The LLM returned the Pydantic JSON schema ($defs, properties, etc.) instead of actual data.
+
+Root Cause:
+The smaller Llama 3.1 8B model misinterpreted the parser's format instructions and echoed the schema.
+
+Solution:
+I strengthened the prompt with explicit instructions to return only JSON values and never include schema-related fields like $defs or properties.
+
+4. Nested Pydantic Parsing
+
+Problem:
+The parser frequently failed when parsing nested objects such as QuestionFeedback.
+
+Root Cause:
+Nested schemas made the output format more complex, increasing the chance of incorrect JSON generation by the LLM.
+
+Solution:
+I simplified the response structure where possible and refined the prompt so the model consistently generated valid nested JSON.
+
+5. Output Truncation
+
+Problem:
+The generated interview report was incomplete, causing JSON parsing failures.
+
+Root Cause:
+The response was too long because the report contained detailed feedback, long summaries, and ideal answers for every question.
+
+Solution:
+I reduced unnecessary output, shortened prompts, and optimized the response structure so the model could finish generating valid JSON.
+
+6. Session Lifecycle Bugs
+
+Problem:
+The interview session became unavailable after generating the final report.
+
+Root Cause:
+The session was being deleted immediately after report generation, making repeated access impossible during testing.
+
+Solution:
+I modified the session lifecycle so reports could be generated successfully while keeping the architecture ready for future MongoDB persistence.
+
+7. Prompt Optimization
+
+Problem:
+The AI sometimes generated repetitive questions or unrealistic evaluation scores.
+
+Root Cause:
+The prompts were too generic and lacked strict evaluation rules, relevance checks, and clear scoring guidelines.
+
+Solution:
+I redesigned the prompts with explicit scoring rubrics, relevance-based evaluation, adaptive difficulty, and concise context, resulting in more realistic and consistent outputs.

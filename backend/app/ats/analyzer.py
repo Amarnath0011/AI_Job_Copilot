@@ -1,7 +1,7 @@
 import json
 import re
 
-from app.ai.llm import llm_service
+from app.services.llm_service import LLMService
 from app.ai.prompts.ats_prompt import ATS_PROMPT
 
 
@@ -21,7 +21,7 @@ class ATSAnalyzer:
             matching_skills=", ".join(score_result["matching_skills"]),
             missing_skills=", ".join(score_result["missing_skills"]),
         )
-
+        llm_service = LLMService()
         response = llm_service.generate(prompt)
 
         response = response.strip()
