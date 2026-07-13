@@ -1,7 +1,12 @@
+import CTA from "../features/landing/CTA"
+import Features from "../features/landing/Features"
+import Hero from "../features/landing/Hero"
 function LandingPage(){
     return(
         <>
-          <h1> Landing Page</h1>
+        <Hero/>
+        <Features/>
+        <CTA/>
         </>
     )
 }
