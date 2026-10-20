@@ -17,6 +17,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("access_token");
       localStorage.removeItem("auth_user");
+      window.dispatchEvent(new Event("auth-change"));
+      if (window.location.pathname !== "/login") window.location.assign("/login");
     }
     return Promise.reject(error);
   },
