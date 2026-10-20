@@ -1,44 +1,56 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.dependencies import get_db
-from app.schemas.auth import SignupRequest
-from app.services.auth_service import (
-    create_user,
-    get_user_by_email,
-)
+from app.api.deps import get_current_user
+from app.core.security import JWT_SECRET_KEY, create_access_token
+from app.db.database import get_db
+from app.db.models import User
+from app.schemas.auth import AuthResponse, LoginRequest, SignupRequest, UserResponse
+from app.services.auth_service import authenticate_user, create_user, get_user_by_email
+
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-router = APIRouter(
-    prefix="/auth",
-    tags=["Authentication"],
-)
-
-
-@router.post("/signup")
-def signup(
-    request: SignupRequest,
-    db: Session = Depends(get_db),
-):
-    existing_user = get_user_by_email(
-        db,
-        request.email,
+def _auth_response(user: User) -> AuthResponse:
+    return AuthResponse(
+        access_token=create_access_token(user.id),
+        user=UserResponse(id=user.id, full_name=user.name, email=user.email),
     )
 
-    if existing_user:
+
+@router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+def signup(payload: SignupRequest, db: Session = Depends(get_db)):
+    if not JWT_SECRET_KEY or len(JWT_SECRET_KEY) < 32:
+        raise HTTPException(status_code=503, detail="JWT_SECRET_KEY is missing or too short. Configure backend/.env.")
+    email = str(payload.email).lower().strip()
+    if get_user_by_email(db, email):
+        raise HTTPException(status_code=409, detail="An account with this email already exists.")
+    try:
+        user = create_user(db, payload.full_name, email, payload.password)
+        return _auth_response(user)
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="An account with this email already exists.") from exc
+
+
+@router.post("/login", response_model=AuthResponse)
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    if not JWT_SECRET_KEY or len(JWT_SECRET_KEY) < 32:
+        raise HTTPException(status_code=503, detail="JWT_SECRET_KEY is missing or too short. Configure backend/.env.")
+    user = authenticate_user(db, str(payload.email), payload.password)
+    if user is None:
         raise HTTPException(
-            status_code=409,
-            detail="Email already registered",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
+    return _auth_response(user)
 
-    user = create_user(
-        db=db,
-        name=request.name,
-        email=request.email,
-        password=request.password,
-    )
 
-    return {
-        "message": "User created successfully",
-        "user_id": user.id,
-    }
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: User = Depends(get_current_user)):
+    return UserResponse(id=current_user.id, full_name=current_user.name, email=current_user.email)

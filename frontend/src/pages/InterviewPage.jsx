@@ -30,8 +30,8 @@ const InterviewPage = () => {
   const [evaluation, setEvaluation] = useState(null);
 
   const handleStartInterview = async () => {
-    if (jobDescription.trim().length < 20) {
-      alert("Job Description must contain at least 20 characters.");
+    if (jobDescription.trim().length < 50) {
+      alert("Job Description must contain at least 50 characters.");
       return;
     }
 

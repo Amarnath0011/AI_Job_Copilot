@@ -7,20 +7,16 @@ def store_document(
     source: str,
     document_type: str,
     session_id: str,
-):
+    user_id: int | str | None = None,
+) -> int:
     documents = split_text(text)
-
-    print(f"Number of chunks: {len(documents)}")
-
     for doc in documents:
         doc.metadata.update({
-    "source": source,
-    "document_type": document_type,
-    "session_id": session_id,
-     })
-
-    vector_store.add_documents(documents)
-
-    # print("Documents stored successfully!")
-
+            "source": source,
+            "document_type": document_type,
+            "session_id": session_id,
+            "user_id": str(user_id) if user_id is not None else "legacy",
+        })
+    if documents:
+        vector_store.add_documents(documents)
     return len(documents)
