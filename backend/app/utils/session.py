@@ -1,35 +1,24 @@
 from uuid import uuid4
 
-from app.models.interview_models import (
-    InterviewEvaluationResponse,
-    InterviewHistoryItem,
-)
+from app.db.database import SessionLocal
+from app.db.models import InterviewSession, Resume
+from app.models.interview_models import InterviewEvaluationResponse, InterviewHistoryItem
+
 
 def generate_session_id() -> str:
-    """
-    Generate a unique session ID for document uploads.
-    """
-
     return str(uuid4())
 
 
+def _evaluation_dict(evaluation: InterviewEvaluationResponse) -> dict:
+    return evaluation.model_dump()
+
+
+def _history_item(raw: dict) -> InterviewHistoryItem:
+    return InterviewHistoryItem.model_validate(raw)
+
+
 class SessionManager:
-    """
-    Manages interview sessions.
-
-    Current Storage:
-        - In Memory Dictionary
-
-    Future:
-        - MongoDB
-    """
-
-    def __init__(self):
-        self.sessions = {}
-
-    # =====================================================
-    # Session Lifecycle
-    # =====================================================
+    """SQLAlchemy-backed interview session store; no process-local session state."""
 
     def create_session(
         self,
@@ -37,173 +26,122 @@ class SessionManager:
         job_description: str,
         first_question: str,
         total_questions: int = 5,
+        user_id: int | None = None,
+        resume_id: str | None = None,
     ) -> dict:
-        """
-        Create a new interview session.
-        """
+        if user_id is None:
+            raise ValueError("Authenticated user is required to create an interview session.")
+        with SessionLocal() as db:
+            resume_query = db.query(Resume).filter(Resume.user_id == user_id)
+            if resume_id:
+                resume_query = resume_query.filter(Resume.id == resume_id)
+            resume = resume_query.order_by(Resume.created_at.desc()).first()
+            if resume is None:
+                raise ValueError("Upload a resume before starting an interview.")
+            row = InterviewSession(
+                id=str(uuid4()),
+                user_id=user_id,
+                resume_id=resume.id,
+                resume_context=resume_context,
+                job_description=job_description,
+                current_question=first_question,
+                current_question_number=1,
+                total_questions=total_questions,
+                average_score=0,
+                history=[],
+                is_completed=False,
+            )
+            db.add(row)
+            db.commit()
+            db.refresh(row)
+            return self._to_dict(row)
 
-        session_id = str(uuid4())
-
-        session = {
-            "session_id": session_id,
-            "resume_context": resume_context,
-            "job_description": job_description,
-            "current_question": first_question,
-            "current_question_number": 1,
-            "total_questions": total_questions,
-            "average_score": 0,
-            "history": [],
+    def _to_dict(self, row: InterviewSession) -> dict:
+        return {
+            "session_id": row.id,
+            "user_id": row.user_id,
+            "resume_id": row.resume_id,
+            "resume_context": row.resume_context,
+            "job_description": row.job_description,
+            "current_question": row.current_question,
+            "current_question_number": row.current_question_number,
+            "total_questions": row.total_questions,
+            "average_score": row.average_score,
+            "history": [_history_item(item) for item in (row.history or [])],
+            "is_completed": row.is_completed,
         }
 
-        self.sessions[session_id] = session
+    def get_session(self, session_id: str, user_id: int | None = None) -> dict | None:
+        if user_id is None:
+            return None
+        with SessionLocal() as db:
+            row = db.query(InterviewSession).filter(
+                InterviewSession.id == session_id,
+                InterviewSession.user_id == user_id,
+            ).first()
+            return self._to_dict(row) if row else None
 
-        return session
+    def delete_session(self, session_id: str, user_id: int | None = None) -> None:
+        if user_id is None:
+            return
+        with SessionLocal() as db:
+            row = db.query(InterviewSession).filter(
+                InterviewSession.id == session_id,
+                InterviewSession.user_id == user_id,
+            ).first()
+            if row:
+                db.delete(row)
+                db.commit()
 
-    def get_session(
-        self,
-        session_id: str,
-    ) -> dict | None:
-        """
-        Returns a session by ID.
-        """
+    def set_next_question(self, session_id: str, question: str, user_id: int | None = None) -> None:
+        with SessionLocal() as db:
+            row = self._owned_row(db, session_id, user_id)
+            row.current_question = question
+            row.current_question_number += 1
+            db.commit()
 
-        return self.sessions.get(session_id)
+    def add_history(self, session_id: str, answer: str, evaluation: InterviewEvaluationResponse, user_id: int | None = None) -> None:
+        with SessionLocal() as db:
+            row = self._owned_row(db, session_id, user_id)
+            history = list(row.history or [])
+            history.append({
+                "question": row.current_question,
+                "answer": answer,
+                "evaluation": _evaluation_dict(evaluation),
+            })
+            row.history = history
+            row.average_score = round(sum(item["evaluation"]["overall_score"] for item in history) / len(history))
+            row.is_completed = len(history) >= row.total_questions
+            db.commit()
 
-    def delete_session(
-        self,
-        session_id: str,
-    ) -> None:
-        """
-        Deletes an interview session.
-        """
+    def _owned_row(self, db, session_id: str, user_id: int | None):
+        if user_id is None:
+            raise ValueError("Authenticated user is required.")
+        row = db.query(InterviewSession).filter(
+            InterviewSession.id == session_id,
+            InterviewSession.user_id == user_id,
+        ).first()
+        if row is None:
+            raise ValueError("Interview session not found.")
+        return row
 
-        self.sessions.pop(session_id, None)
-
-    # =====================================================
-    # Question Management
-    # =====================================================
-
-    def get_current_question(
-        self,
-        session_id: str,
-    ) -> str:
-
-        session = self.get_session(session_id)
-
+    def is_completed(self, session_id: str, user_id: int | None = None) -> bool:
+        session = self.get_session(session_id, user_id)
         if not session:
             raise ValueError("Interview session not found.")
+        return session["is_completed"] or len(session["history"]) >= session["total_questions"]
 
-        return session["current_question"]
-
-    def set_next_question(
-        self,
-        session_id: str,
-        question: str,
-    ) -> None:
-
-        session = self.get_session(session_id)
-
+    def get_history(self, session_id: str, user_id: int | None = None) -> list[InterviewHistoryItem]:
+        session = self.get_session(session_id, user_id)
         if not session:
             raise ValueError("Interview session not found.")
-
-        session["current_question"] = question
-        session["current_question_number"] += 1
-
-    # =====================================================
-    # History
-    # =====================================================
-
-    def add_history(
-        self,
-        session_id: str,
-        answer: str,
-        evaluation: InterviewEvaluationResponse,
-    ) -> None:
-
-        session = self.get_session(session_id)
-
-        if not session:
-            raise ValueError("Interview session not found.")
-
-        history_item = InterviewHistoryItem(
-            question=session["current_question"],
-            answer=answer,
-            evaluation=evaluation,
-        )
-
-        session["history"].append(history_item)
-
-        self._update_average_score(session)
-
-    # =====================================================
-    # Helpers
-    # =====================================================
-
-    def is_completed(
-        self,
-        session_id: str,
-    ) -> bool:
-
-        session = self.get_session(session_id)
-
-        if not session:
-            raise ValueError("Interview session not found.")
-
-        return (
-            session["current_question_number"]
-            >= session["total_questions"]
-        )
-
-    def get_history(
-        self,
-        session_id: str,
-    ) -> list[InterviewHistoryItem]:
-
-        session = self.get_session(session_id)
-
-        if not session:
-            raise ValueError("Interview session not found.")
-
         return session["history"]
 
-    def get_average_score(
-        self,
-        session_id: str,
-    ) -> int:
-
-        session = self.get_session(session_id)
-
+    def get_average_score(self, session_id: str, user_id: int | None = None) -> int:
+        session = self.get_session(session_id, user_id)
         if not session:
             raise ValueError("Interview session not found.")
-
         return session["average_score"]
 
-    def _update_average_score(
-        self,
-        session: dict,
-    ) -> None:
-        """
-        Recalculate average interview score.
-        """
-
-        history = session["history"]
-
-        if not history:
-            session["average_score"] = 0
-            return
-
-        total = sum(
-            item.evaluation.overall_score
-            for item in history
-        )
-
-        session["average_score"] = round(
-            total / len(history)
-        )
-
-
-# =========================================================
-# Singleton Instance
-# =========================================================
 
 session_manager = SessionManager()
