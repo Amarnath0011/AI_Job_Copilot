@@ -8,6 +8,7 @@ from app.ai.prompts.interview import (
     interview_report_parser,
     next_question_parser,
 )
+from app.ai.prompts.interview_report import INTERVIEW_REPORT_PROMPT, interview_report_parser
 from app.models.interview_models import (
     InterviewAnswerRequest,
     InterviewAnswerResponse,
