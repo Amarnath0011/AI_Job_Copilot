@@ -1,4 +1,8 @@
 import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
