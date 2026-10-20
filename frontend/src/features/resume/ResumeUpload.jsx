@@ -14,7 +14,7 @@ export default function ResumeUpload({ onUploadSuccess, onATSAnalysis }) {
     setError("");
     setSuccess("");
     if (!selectedFile) return setError("Choose a PDF resume first.");
-    if (selectedFile.type !== "application/pdf" && !selectedFile.name.toLowerCase().endsWith(".pdf")) {
+    if (!selectedFile.name.toLowerCase().endsWith(".pdf") || (selectedFile.type && selectedFile.type !== "application/pdf")) {
       return setError("Only PDF resumes are supported.");
     }
     if (jobDescription.trim().length < 20) {
