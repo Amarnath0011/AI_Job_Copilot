@@ -10,7 +10,7 @@ AI Job Copilot is a full-stack AI application designed to assist job seekers thr
 
 The application allows users to upload their resumes, compare them against job descriptions, receive ATS scores, identify missing skills, generate AI-powered resume improvements, prepare personalized interview questions, and eventually interact with an AI interviewer.
 
-The project is built using a production-oriented architecture powered by FastAPI, LangChain, ChromaDB, and Large Language Models. The LLM layer is abstracted through a dedicated `LLMService`, allowing seamless switching between providers (Groq, OpenAI, Hugging Face, OpenRouter, etc.) with minimal code changes. A React dashboard and Chrome Extension are planned for the frontend.
+The project is built using a production-oriented architecture powered by FastAPI, LangChain, ChromaDB, and Large Language Models. The LLM layer is abstracted through a dedicated `LLMService`, allowing seamless switching between providers (Groq, OpenAI, Hugging Face, OpenRouter, etc.) with minimal code changes. The React frontend includes authentication, resume upload, ATS analysis, and authenticated interview flows.
 
 ---
 
@@ -164,7 +164,7 @@ Then:
 
 ---
 
-## Frontend (Planned)
+## Frontend
 
 * React
 * Tailwind CSS
@@ -172,9 +172,9 @@ Then:
 
 ---
 
-## Database (Future)
+## Database
 
-* PostgreSQL 
+* MySQL with SQLAlchemy 
 
 ---
 
@@ -295,11 +295,18 @@ backend/
 
 # Current API Endpoints
 
-## Resume
+## Authentication and user data
 
-| Method | Endpoint         | Description   |
-| ------ | ---------------- | ------------- |
-| POST   | `/resume/upload` | Upload Resume |
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | `/auth/signup` | Create an account and return a JWT |
+| POST | `/auth/login` | Log in and return a JWT |
+| GET | `/auth/me` | Return the authenticated profile |
+| POST | `/resume/upload` | Upload a private PDF resume to Cloudinary |
+| GET | `/resume/mine` | List only the current user's resumes |
+| POST | `/ats/analyze` | Analyze a resume session owned by the current user |
+| GET | `/interview/sessions` | List only the current user's interview sessions |
+| DELETE | `/interview/sessions/{session_id}` | Delete an owned interview session |
 
 ---
 
@@ -407,29 +414,41 @@ Structured JSON Response
 
 # Setup
 
-```bash
-git clone <repository>
-
+ ```bash
+git clone https://github.com/Amarnath0011/AI_Job_Copilot.git
+cd AI_Job_Copilot
+cp backend/.env.example backend/.env
+# Edit backend/.env with your MySQL, JWT, AI, and Cloudinary credentials
 cd backend
-
-python -m venv venv
-
-source venv/bin/activate
-
-pip install -r requirements.txt
-
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
+
+In a second terminal, configure and start the frontend:
+
+```bash
+cd AI_Job_Copilot/frontend
+cp .env.example .env
+npm ci
+npm run dev
+```
+
+Open the Vite URL (usually http://localhost:5173). The API docs are at http://127.0.0.1:8000/docs.
 
 ---
 
 # Environment Variables
 
-```env
-HF_TOKEN=your_huggingface_token
+Copy `backend/.env.example` to `backend/.env` and set:
 
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-```
+- `DATABASE_URL` for your MySQL database.
+- `JWT_SECRET_KEY` to a random secret generated locally with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Never commit this value.
+- `GROQ_API_KEY` and `HF_TOKEN` for the AI/embedding providers.
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` for private resume storage.
+
+Copy `frontend/.env.example` to `frontend/.env` and set `VITE_API_BASE_URL` if the backend is not running at `http://127.0.0.1:8000`.
 
 ---
 
