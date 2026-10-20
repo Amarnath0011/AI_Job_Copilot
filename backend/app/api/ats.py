@@ -7,7 +7,6 @@ from app.api.deps import get_current_user
 from app.db.database import get_db
 from app.db.models import Resume, User
 from app.models.ats_models import ATSRequest
-from app.rag.retriever import get_retriever
 from app.services.ats_service import ats_service
 
 router = APIRouter(prefix="/ats", tags=["ATS"])
@@ -26,18 +25,25 @@ def analyze_resume(
     if resume is None:
         raise HTTPException(status_code=404, detail="Resume session not found for this user.")
 
-    retriever = get_retriever(
-        document_type="resume",
-        session_id=resume.session_id,
-        user_id=current_user.id,
-        k=5,
-    )
-    docs = retriever.invoke(request.job_description)
-    resume_text = "\n\n".join(doc.page_content for doc in docs) or resume.extracted_text
+    # ATS scoring must see the complete resume. RAG top-k retrieval is useful for
+    # targeted question answering, but can omit skills from sections it did not fetch.
+    resume_text = resume.extracted_text or ""
     if not resume_text.strip():
         raise HTTPException(status_code=404, detail="No readable resume text is available.")
+
     try:
-        result = ats_service.analyze(resume_text=resume_text, job_description=request.job_description)
+        result = ats_service.analyze(
+            resume_text=resume_text,
+            job_description=request.job_description,
+        )
     except Exception as exc:
-        raise HTTPException(status_code=502, detail="ATS analysis failed. Check the AI provider configuration and retry.") from exc
-    return {"success": True, "message": "ATS analysis completed successfully.", "data": result}
+        raise HTTPException(
+            status_code=502,
+            detail="ATS analysis failed. Check the AI provider configuration and retry.",
+        ) from exc
+
+    return {
+        "success": True,
+        "message": "ATS analysis completed successfully.",
+        "data": result,
+    }

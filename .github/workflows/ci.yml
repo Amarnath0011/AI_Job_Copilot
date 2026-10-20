@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - feature/full-auth-user-ownership
+      - fix/ats-scoring-reliability
   pull_request:
     branches:
       - local-baseline-2026-10-20
       - main
+      - feature/full-auth-user-ownership
 
 jobs:
   backend:
