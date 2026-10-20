@@ -27,8 +27,9 @@ def upload_resume_bytes(contents: bytes, public_id: str) -> dict[str, Any]:
         result = cloudinary.uploader.upload(
             BytesIO(contents),
             resource_type="raw",
+            type="authenticated",
             folder="ai-job-copilot/resumes",
-            public_id=public_id,
+            public_id=f"{public_id}.pdf",
             overwrite=False,
             unique_filename=False,
         )
