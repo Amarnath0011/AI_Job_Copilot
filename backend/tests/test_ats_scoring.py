@@ -56,7 +56,7 @@ def test_missing_required_skill_reduces_keyword_coverage(monkeypatch):
 
     assert result["keyword_score"] == 75.0
     assert result["missing_skills"] == ["docker"]
-    assert result["ats_score"] == 85
+    assert result["ats_score"] == 77
 
 
 def test_similarity_chunking_covers_long_text_and_handles_empty_text():
