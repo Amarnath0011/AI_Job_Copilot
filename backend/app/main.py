@@ -5,6 +5,7 @@ from app.api.ats import router as ats_router
 from app.api.interview import router as interview_router
 from app.api.test import router as test_router
 from app.api.test2 import router as test2_router
+from app.api.auth import router as auth_router
 
 from app.rag.retriever import get_retriever
 from app.api.resume import router
@@ -20,6 +21,7 @@ app.include_router(ats_router)
 app.include_router(interview_router)
 app.include_router(test_router)
 app.include_router(test2_router)
+app.include_router(auth_router)
 
 
 @router.get("/search")
@@ -55,6 +57,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5174",
+        "http://localhost:5173",
         "http://localhost:5173",
     ],
     allow_credentials=True,

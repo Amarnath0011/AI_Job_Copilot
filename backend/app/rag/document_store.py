@@ -21,6 +21,6 @@ def store_document(
 
     vector_store.add_documents(documents)
 
-    print("Documents stored successfully!")
+    # print("Documents stored successfully!")
 
     return len(documents)

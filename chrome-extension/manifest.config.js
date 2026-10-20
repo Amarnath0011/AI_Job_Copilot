@@ -1,26 +1,39 @@
 const manifest = {
-    manifest_version: 3,
-  
-    name: "AI Job Copilot",
-  
-    version: "1.0.0",
-  
-    description: "AI-powered ATS Analyzer",
-  
-    action: {
-      default_popup: "index.html",
-      default_title: "AI Job Copilot",
+  manifest_version: 3,
+
+  name: "AI Job Copilot",
+
+  version: "1.0.0",
+
+  description: "AI-powered ATS Analyzer",
+
+  action: {
+    default_popup: "index.html",
+    default_title: "AI Job Copilot",
+  },
+
+  permissions: [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+
+  host_permissions: [
+    "<all_urls>"
+  ],
+
+  background: {
+    service_worker: "src/background/background.js",
+    type: "module",
+  },
+
+  content_scripts: [
+    {
+      matches: ["<all_urls>"],
+      js: ["src/content/content.js"],
+      run_at: "document_idle",
     },
-  
-    permissions: [
-      "storage",
-      "activeTab",
-      "scripting"
-    ],
-  
-    host_permissions: [
-      "<all_urls>"
-    ],
-  };
-  
-  export default manifest;
+  ],
+};
+
+export default manifest;
