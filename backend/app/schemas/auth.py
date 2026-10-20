@@ -1,6 +1,17 @@
-from pydantic import BaseModel , EmailStr , Field
+from pydantic import BaseModel, EmailStr, Field
+
 
 class SignupRequest(BaseModel):
-    name:str = Field(min_len = 2 , max_len = 50)
+    name: str = Field(min_length=2, max_length=50)
     email: EmailStr
-    password : str = Field(min_len = 8 , max_len = 100)
+    password: str = Field(min_length=8, max_length=100)
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=100)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
