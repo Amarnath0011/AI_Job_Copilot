@@ -32,10 +32,10 @@ class SessionManager:
         if user_id is None:
             raise ValueError("Authenticated user is required to create an interview session.")
         with SessionLocal() as db:
-            resume = db.query(Resume).filter(
-                Resume.user_id == user_id,
-                Resume.id == resume_id if resume_id else True,
-            ).order_by(Resume.created_at.desc()).first()
+            resume_query = db.query(Resume).filter(Resume.user_id == user_id)
+            if resume_id:
+                resume_query = resume_query.filter(Resume.id == resume_id)
+            resume = resume_query.order_by(Resume.created_at.desc()).first()
             if resume is None:
                 raise ValueError("Upload a resume before starting an interview.")
             row = InterviewSession(
