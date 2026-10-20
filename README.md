@@ -418,7 +418,8 @@ Structured JSON Response
 git clone https://github.com/Amarnath0011/AI_Job_Copilot.git
 cd AI_Job_Copilot
 cp backend/.env.example backend/.env
-# Edit backend/.env with your MySQL, JWT, AI, and Cloudinary credentials
+# Fill backend/.env with your MySQL, JWT, AI, and Cloudinary credentials.
+# If you already use a root .env, keep using it instead of creating backend/.env, or copy your existing local values into backend/.env.
 cd backend
 python -m venv .venv
 source .venv/bin/activate
