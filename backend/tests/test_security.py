@@ -1,6 +1,5 @@
 import pytest
 
-from app import core
 from app.core import security
 
 
