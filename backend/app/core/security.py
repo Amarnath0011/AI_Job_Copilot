@@ -10,36 +10,34 @@ load_dotenv()
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 
 def hash_password(password: str) -> str:
-    password_bytes = password.encode("utf-8")
-    if len(password_bytes) > 72:
-        raise ValueError("Password must be at most 72 UTF-8 bytes.")
-    return bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
+    encoded = password.encode("utf-8")
+    if len(encoded) > 72:
+        raise ValueError("Password must be no more than 72 UTF-8 bytes.")
+    return bcrypt.hashpw(encoded, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str) -> bool:
     try:
-        password_bytes = password.encode("utf-8")
-        if len(password_bytes) > 72:
+        encoded = password.encode("utf-8")
+        if len(encoded) > 72:
             return False
-        return bcrypt.checkpw(password_bytes, password_hash.encode("utf-8"))
-    except (ValueError, TypeError):
+        return bcrypt.checkpw(encoded, password_hash.encode("utf-8"))
+    except (ValueError, TypeError, AttributeError):
         return False
 
 
 def create_access_token(user_id: int) -> str:
     if not JWT_SECRET_KEY or len(JWT_SECRET_KEY) < 32:
-        raise RuntimeError(
-            "JWT_SECRET_KEY must be set to a random secret of at least 32 characters."
-        )
+        raise RuntimeError("JWT_SECRET_KEY must be configured with at least 32 characters.")
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
         "iat": now,
-        "exp": now + timedelta(minutes=ACCESS_TOKEN_MINUTES),
+        "exp": now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
