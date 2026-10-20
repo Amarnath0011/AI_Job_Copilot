@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.core.security import create_access_token
+from app.core.security import JWT_SECRET_KEY, create_access_token
 from app.db.database import get_db
 from app.db.models import User
 from app.schemas.auth import AuthResponse, LoginRequest, SignupRequest, UserResponse
@@ -21,6 +21,8 @@ def _auth_response(user: User) -> AuthResponse:
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 def signup(payload: SignupRequest, db: Session = Depends(get_db)):
+    if not JWT_SECRET_KEY or len(JWT_SECRET_KEY) < 32:
+        raise HTTPException(status_code=503, detail="JWT_SECRET_KEY is missing or too short. Configure backend/.env.")
     email = str(payload.email).lower().strip()
     if get_user_by_email(db, email):
         raise HTTPException(status_code=409, detail="An account with this email already exists.")
@@ -37,6 +39,8 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=AuthResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    if not JWT_SECRET_KEY or len(JWT_SECRET_KEY) < 32:
+        raise HTTPException(status_code=503, detail="JWT_SECRET_KEY is missing or too short. Configure backend/.env.")
     user = authenticate_user(db, str(payload.email), payload.password)
     if user is None:
         raise HTTPException(
