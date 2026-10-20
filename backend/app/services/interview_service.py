@@ -23,6 +23,8 @@ from app.models.interview_models import (
     InterviewStartResponse,
 )
 from app.rag.retriever import get_retriever
+from app.db.database import SessionLocal
+from app.db.models import Resume
 from app.services.llm_service import llm_service
 from app.utils.parsers import LLMParser
 from app.utils.session import session_manager
@@ -40,6 +42,8 @@ class InterviewService:
     def _get_resume_context(
         self,
         job_description: str,
+        user_id: int,
+        session_id: str,
     ) -> str:
         """
         Retrieve the most relevant resume chunks using RAG.
@@ -47,6 +51,8 @@ class InterviewService:
 
         retriever = get_retriever(
             document_type="resume",
+            session_id=session_id,
+            user_id=user_id,
             k=5,
         )
 
@@ -136,10 +142,16 @@ class InterviewService:
     def generate_questions(
         self,
         request: InterviewQuestionRequest,
+        user_id: int,
     ) -> InterviewQuestionResponse:
 
+        with SessionLocal() as db:
+            resume = db.query(Resume).filter(Resume.user_id == user_id).order_by(Resume.created_at.desc()).first()
+            if resume is None:
+                raise ValueError("Upload a resume before generating interview questions.")
+            resume_session_id = resume.session_id
         resume_context = self._get_resume_context(
-            request.job_description
+            request.job_description, user_id, resume_session_id
         )
 
         messages = INTERVIEW_QUESTION_PROMPT.format_messages(
@@ -232,13 +244,20 @@ Feedback:
     def start_interview(
         self,
         request: InterviewStartRequest,
+        user_id: int,
     ) -> InterviewStartResponse:
         """
         Start a new interview session.
         """
 
+        with SessionLocal() as db:
+            resume = db.query(Resume).filter(Resume.user_id == user_id).order_by(Resume.created_at.desc()).first()
+            if resume is None:
+                raise ValueError("Upload a resume before starting an interview.")
+            resume_id = resume.id
+            resume_session_id = resume.session_id
         resume_context = self._get_resume_context(
-            request.job_description
+            request.job_description, user_id, resume_session_id
         )
 
         first_question = self.generate_next_question(
@@ -253,6 +272,8 @@ Feedback:
             job_description=request.job_description,
             first_question=first_question,
             total_questions=5,
+            user_id=user_id,
+            resume_id=resume_id,
         )
 
         return InterviewStartResponse(
@@ -265,13 +286,14 @@ Feedback:
     def submit_answer(
         self,
         request: InterviewAnswerRequest,
+        user_id: int,
     ) -> InterviewAnswerResponse:
         """
         Evaluate answer and generate next adaptive question.
         """
 
         session = session_manager.get_session(
-            request.session_id
+            request.session_id, user_id
         )
 
         if not session:
@@ -290,10 +312,11 @@ Feedback:
             session_id=request.session_id,
             answer=request.answer,
             evaluation=evaluation,
+            user_id=user_id,
         )
 
         completed = session_manager.is_completed(
-            request.session_id
+            request.session_id, user_id
         )
 
         if completed:
@@ -310,20 +333,21 @@ Feedback:
             resume_context=session["resume_context"],
             job_description=session["job_description"],
             history=session_manager.get_history(
-                request.session_id
+                request.session_id, user_id
             ),
             average_score=session_manager.get_average_score(
-                request.session_id
+                request.session_id, user_id
             ),
         )
 
         session_manager.set_next_question(
             request.session_id,
             next_question,
+            user_id,
         )
 
         updated_session = session_manager.get_session(
-            request.session_id
+            request.session_id, user_id
         )
 
         return InterviewAnswerResponse(
@@ -337,13 +361,14 @@ Feedback:
     def end_interview(
         self,
         request: InterviewEndRequest,
+        user_id: int,
     ) -> InterviewReportResponse:
         """
         Generate the final interview report for a completed interview session.
         """
 
         session = session_manager.get_session(
-        request.session_id
+            request.session_id, user_id
         )
 
         if not session:
