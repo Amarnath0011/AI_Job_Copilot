@@ -6,7 +6,7 @@ from app.api.deps import get_current_user
 from app.core.security import create_access_token
 from app.db.database import get_db
 from app.db.models import User
-from app.models.auth import AuthResponse, LoginRequest, SignupRequest, UserResponse
+from app.schemas.auth import AuthResponse, LoginRequest, SignupRequest, UserResponse
 from app.services.auth_service import authenticate_user, create_user, get_user_by_email
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
