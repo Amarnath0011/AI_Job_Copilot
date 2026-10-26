@@ -10,12 +10,13 @@ def store_document(
     user_id: int | str | None = None,
 ) -> int:
     documents = split_text(text)
-    for doc in documents:
+    for idx, doc in enumerate(documents):
         doc.metadata.update({
             "source": source,
             "document_type": document_type,
             "session_id": session_id,
             "user_id": str(user_id) if user_id is not None else "legacy",
+            "chunk_index": idx,
         })
     if documents:
         vector_store.add_documents(documents)

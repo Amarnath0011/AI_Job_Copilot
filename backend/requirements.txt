@@ -133,3 +133,6 @@ passlib[bcrypt]==1.7.4
 
 cloudinary==1.44.1
 email-validator==2.2.0
+
+pytest>=9.1.1
+pytest-mock>=3.17.0
