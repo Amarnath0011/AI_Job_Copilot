@@ -1,39 +1,68 @@
+from io import BytesIO
 from pathlib import Path
-import shutil
-from fastapi import UploadFile
-from app.utils.session import generate_session_id
+from uuid import uuid4
 
-from app.services.parser import extract_text_from_pdf
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+
+from app.db.models import Resume, User
 from app.rag.document_store import store_document
+from app.services.cloudinary_service import delete_resume_asset, upload_resume_bytes
+from app.services.parser import extract_text_from_pdf
 
-UPLOAD_DIR = Path("app/uploads")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+MAX_RESUME_BYTES = 10 * 1024 * 1024
 
 
-def save_resume(file: UploadFile):
+def save_resume(contents: bytes, filename: str, content_type: str, user: User, db: Session) -> dict:
+    if not contents:
+        raise HTTPException(status_code=400, detail="The uploaded file is empty.")
+    if len(contents) > MAX_RESUME_BYTES:
+        raise HTTPException(status_code=413, detail="Resume must be 10 MB or smaller.")
+    if Path(filename).suffix.lower() != ".pdf" or content_type != "application/pdf":
+        raise HTTPException(status_code=415, detail="Please upload a PDF resume.")
+    try:
+        extracted_text = extract_text_from_pdf(BytesIO(contents))
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail="The uploaded file is not a readable PDF.") from exc
+    if not extracted_text.strip():
+        raise HTTPException(status_code=422, detail="No readable text was found in this PDF.")
 
-    file_path = UPLOAD_DIR / file.filename
+    session_id = str(uuid4())
+    uploaded = upload_resume_bytes(contents, session_id)
+    resume = Resume(
+        id=str(uuid4()),
+        session_id=session_id,
+        user_id=user.id,
+        original_filename=Path(filename).name[:255],
+        cloudinary_url=uploaded["secure_url"],
+        cloudinary_public_id=uploaded["public_id"],
+        extracted_text=extracted_text,
+    )
+    try:
+        db.add(resume)
+        db.commit()
+        db.refresh(resume)
+    except Exception:
+        db.rollback()
+        delete_resume_asset(uploaded["public_id"])
+        raise
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    extracted_text = ""
-
-    if file.content_type == "application/pdf":
-        extracted_text = extract_text_from_pdf(file_path)
-        session_id = generate_session_id()
-        # Store in Chroma
+    try:
         store_document(
-           text=extracted_text,
-           source=file.filename,
-           document_type="resume",
-           session_id=session_id,
-)
+            text=extracted_text,
+            source=resume.id,
+            document_type="resume",
+            session_id=session_id,
+            user_id=str(user.id),
+        )
+    except Exception as exc:
+        # Keep the durable resume record; it can be re-indexed without re-uploading.
+        raise HTTPException(status_code=500, detail="Resume is stored, but search indexing failed. Please retry.") from exc
 
     return {
-        "filename": file.filename,
-        "size": file_path.stat().st_size,
-        "path": str(file_path),
-        "text": extracted_text,
-        "session_id": session_id
+        "resume_id": resume.id,
+        "filename": resume.original_filename,
+        "size": len(contents),
+        "session_id": resume.session_id,
+        "created_at": resume.created_at.isoformat() if resume.created_at else None,
     }
