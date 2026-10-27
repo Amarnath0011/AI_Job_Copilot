@@ -2,18 +2,8 @@ import api from "../api/axios";
 
 export const uploadResume = async (file) => {
   const formData = new FormData();
-
   formData.append("file", file);
-
-  const response = await api.post("/resume/upload", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-
+  // Let Axios/browser set the multipart boundary automatically.
+  const response = await api.post("/resume/upload", formData);
   return response.data;
 };
-
-export const ATSScore = async() =>{
-    
-}

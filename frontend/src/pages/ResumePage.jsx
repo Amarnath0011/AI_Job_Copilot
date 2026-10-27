@@ -42,6 +42,7 @@ const ResumePage = () => {
                 <ATSScore
                   score={atsData.data.ats_score}
                   similarity={atsData.data.semantic_similarity}
+                  keywordScore={atsData.data.keyword_score}
                   matchingSkills={atsData.data.matching_skills}
                   missingSkills={atsData.data.missing_skills}
                 />
@@ -115,6 +116,7 @@ const ResumePage = () => {
     <ATSScore
       score={atsData.data.ats_score}
       similarity={atsData.data.semantic_similarity}
+      keywordScore={atsData.data.keyword_score}
       matchingSkills={atsData.data.matching_skills}
       missingSkills={atsData.data.missing_skills}
     />

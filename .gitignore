@@ -21,7 +21,7 @@ backend/uploads/
 # VS Code
 # ==========================
 .vscode/
-
+README_Fronted
 # ==========================
 # macOS
 # ==========================
@@ -46,3 +46,30 @@ backend/app/uploads/
 # Python cache
 __pycache__/
 *.pyc
+# Python environments
+venv/
+.venv/
+backend/venv/
+backend/.venv/
+
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local uploads and vector databases
+backend/app/uploads/
+backend/app/vectorstore/
+backend/app/**/uploads/
+backend/app/**/vectorstore/
+
+# Local database and generated files
+*.sqlite
+*.sqlite3
+.DS_Store
